@@ -41,14 +41,14 @@
     <script>
       var vConsole = new window.VConsole();
 
-      let {outer,inner} = genTemplate();
-      let {offsetWidth:outerWidth,offsetHeight:outerHeight} = outer;
-      outerWidth = window.innerWidth;
-      outerHeight = window.innerHeight;
-      
       document.addEventListener('click', e => {
             if(e.target.classList.contains('img-preview')){
-              imgShow(e.target);
+              let {outer,inner} = genTemplate();
+              let {offsetWidth:outerWidth,offsetHeight:outerHeight} = outer;
+              outerWidth = window.innerWidth;
+              outerHeight = window.innerHeight;
+
+              imgShow(outer,inner,e.target);
               //移动端手指移动事件,如果不需要移动端手指事件,这一部分内容可以不加,只要上面两行代码以及imgShow()事件
               var store = {
                 scale: 1,
@@ -101,7 +101,7 @@
                     var pageY2 = Number(events.pageY);
                     let freeTop = position_top + pageY2 - pageY;
                     let freeLeft = position_left + pageX2 - pageX;
-                    let {left,top} = getLimitedPos(freeLeft,freeTop);
+                    let {left,top} = getLimitedPos(inner,freeLeft,freeTop);
                     //控制图片移动
                     inner.style.top = top + 'px';
                     inner.style.left = left + 'px';
@@ -178,7 +178,7 @@
             }
         })
       
-      function getLimitedPos(left,top){
+      function getLimitedPos(inner,left,top){
         let scale = getTransformScale(inner);
         let {offsetWidth:innerWidth,offsetHeight:innerHeight} = inner;
         let inlineMin,inlineMax;
@@ -239,7 +239,7 @@
       }
 
       //遮罩层图片位置
-      function imgShow(originImg) {
+      function imgShow(outer,inner,originImg) {
         //这是刚才判断是否PC端的函数事件
         var flag = IsPC();
         var src = originImg.getAttribute("src"); //获取当前点击的pimg元素中的src属性
@@ -290,8 +290,8 @@
             outer.style.display = 'block';
         }
 
-        outer.addEventListener('click', (e) => {
-            outer.style.display = 'none';
+        outer.addEventListener('click', function(){
+            this.remove();
         })
       }
 
