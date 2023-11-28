@@ -36,147 +36,149 @@
 
   <body class="con">
     <img class="img-preview" width="200" height="100" src="/imgs/aa.jpg" alt="aaa" />
-    <!-- <script src="https://cdn.bootcdn.net/ajax/libs/jquery/1.9.0/jquery.js"></script> -->
     <script src="https://cdn.bootcdn.net/ajax/libs/vConsole/3.15.1/vconsole.min.js"></script>
     <script>
       var vConsole = new window.VConsole();
 
       document.addEventListener('click', e => {
-            if(e.target.classList.contains('img-preview')){
-              let {outer,inner} = genTemplate();
-              let {offsetWidth:outerWidth,offsetHeight:outerHeight} = outer;
-              outerWidth = window.innerWidth;
-              outerHeight = window.innerHeight;
+          if(e.target.classList.contains('img-preview')){
+              initDz(e.target)
+          }
+      })
+      
+      function initDz(originImg){
+          let {outer,inner} = genTemplate();
+          let {offsetWidth:outerWidth,offsetHeight:outerHeight} = outer;
+          outerWidth = window.innerWidth;
+          outerHeight = window.innerHeight;
 
-              imgShow(outer,inner,e.target);
-              //移动端手指移动事件,如果不需要移动端手指事件,这一部分内容可以不加,只要上面两行代码以及imgShow()事件
-              var store = {
-                scale: 1,
-              };
-              //定义移动端的初始位置
-              var position_top, position_left, pageX, pageY;
-              // 缩放事件的处理
-              //事件开始
-              inner.addEventListener("touchstart", function (event) {
-                  event.preventDefault(); //阻止默认事件，防止底部内容滚动
-                  //在触屏设备下，要判断是单指还是多指操作，可以通过event.touches数组对象的长度判断。
-                  var touches = event.touches;
-                  var events = touches[0]; //单指
-                  var events2 = touches[1]; //双指
-                  if (touches.length == 1) {
-                    //单指操作
-                    pageX = Number(events.pageX);
-                    pageY = Number(events.pageY);
-                    store.moveable = true;
-                    // var _obj = $("#inner");
-                    //  .css获取的值是字符串
-                    position_left = parseFloat(inner.style.left.split("px"));
-                    position_top = parseFloat(inner.style.top.split("px"));
-                  } else {
-                    // 第一个触摸点的坐标
-                    store.pageX = events.pageX;
-                    store.pageY = events.pageY;
-                    store.moveable = true;
-                    if (events2) {
-                      store.pageX2 = events2.pageX;
-                      store.pageY2 = events2.pageY;
-                    }
-                    store.originScale = store.scale || 1;
+          imgShow(outer,inner,originImg);
+          //移动端手指移动事件,如果不需要移动端手指事件,这一部分内容可以不加,只要上面两行代码以及imgShow()事件
+          var store = {
+            scale: 1,
+          };
+          //定义移动端的初始位置
+          var position_top, position_left, pageX, pageY;
+          // 缩放事件的处理
+          //事件开始
+          inner.addEventListener("touchstart", function (event) {
+              event.preventDefault(); //阻止默认事件，防止底部内容滚动
+              //在触屏设备下，要判断是单指还是多指操作，可以通过event.touches数组对象的长度判断。
+              var touches = event.touches;
+              var events = touches[0]; //单指
+              var events2 = touches[1]; //双指
+              if (touches.length == 1) {
+                //单指操作
+                pageX = Number(events.pageX);
+                pageY = Number(events.pageY);
+                store.moveable = true;
+                // var _obj = $("#inner");
+                //  .css获取的值是字符串
+                position_left = parseFloat(inner.style.left.split("px"));
+                position_top = parseFloat(inner.style.top.split("px"));
+              } else {
+                // 第一个触摸点的坐标
+                store.pageX = events.pageX;
+                store.pageY = events.pageY;
+                store.moveable = true;
+                if (events2) {
+                  store.pageX2 = events2.pageX;
+                  store.pageY2 = events2.pageY;
+                }
+                store.originScale = store.scale || 1;
+              }
+            },
+            { passive: false }
+          ); //passive: false必须加上,否则控制台报错
+          
+          //开始移动
+          document.addEventListener("touchmove", function (event) {
+              event.preventDefault(); //阻止默认事件，防止底部滚动
+              if (!store.moveable) {
+                return;
+              }
+              var touches = event.touches;
+              var events = touches[0];
+              var events2 = touches[1];
+              if (touches.length == 1) {
+                var pageX2 = Number(events.pageX);
+                var pageY2 = Number(events.pageY);
+                let freeTop = position_top + pageY2 - pageY;
+                let freeLeft = position_left + pageX2 - pageX;
+                let {left,top} = getLimitedPos(inner,freeLeft,freeTop);
+                //控制图片移动
+                inner.style.top = top + 'px';
+                inner.style.left = left + 'px';
+              } else {
+                // 双指移动
+                if (events2) {
+                  // 第2个指头坐标在touchmove时候获取
+                  if (!store.pageX2) {
+                    store.pageX2 = events2.pageX;
                   }
-                },
-                { passive: false }
-              ); //passive: false必须加上,否则控制台报错
-              
-              //开始移动
-              document.addEventListener("touchmove", function (event) {
-                  event.preventDefault(); //阻止默认事件，防止底部滚动
-                  if (!store.moveable) {
-                    return;
+                  if (!store.pageY2) {
+                    store.pageY2 = events2.pageY;
                   }
-                  var touches = event.touches;
-                  var events = touches[0];
-                  var events2 = touches[1];
-                  if (touches.length == 1) {
-                    var pageX2 = Number(events.pageX);
-                    var pageY2 = Number(events.pageY);
-                    let freeTop = position_top + pageY2 - pageY;
-                    let freeLeft = position_left + pageX2 - pageX;
-                    let {left,top} = getLimitedPos(inner,freeLeft,freeTop);
-                    //控制图片移动
-                    inner.style.top = top + 'px';
-                    inner.style.left = left + 'px';
-                  } else {
-                    // 双指移动
-                    if (events2) {
-                      // 第2个指头坐标在touchmove时候获取
-                      if (!store.pageX2) {
-                        store.pageX2 = events2.pageX;
-                      }
-                      if (!store.pageY2) {
-                        store.pageY2 = events2.pageY;
-                      }
 
-                      // 获取坐标之间的距离
-                      var getDistance = function (start, stop) {
-                        //用到三角函数
-                        return Math.hypot(stop.x - start.x, stop.y - start.y);
-                      };
-                      // 双指缩放比例计算
-                      var zoom =
-                        getDistance(
-                          {
-                            x: events.pageX,
-                            y: events.pageY,
-                          },
-                          {
-                            x: events2.pageX,
-                            y: events2.pageY,
-                          }
-                        ) /
-                        getDistance(
-                          {
-                            x: store.pageX,
-                            y: store.pageY,
-                          },
-                          {
-                            x: store.pageX2,
-                            y: store.pageY2,
-                          }
-                        );
-                      // 应用在元素上的缩放比例
-                      var newScale = store.originScale * zoom * 0.8;
-                      var maxScale = 3, minScale = 1;
-                      // 最大缩放比例限制
-                      if (newScale > maxScale) {
-                        newScale = maxScale;
+                  // 获取坐标之间的距离
+                  var getDistance = function (start, stop) {
+                    //用到三角函数
+                    return Math.hypot(stop.x - start.x, stop.y - start.y);
+                  };
+                  // 双指缩放比例计算
+                  var zoom =
+                    getDistance(
+                      {
+                        x: events.pageX,
+                        y: events.pageY,
+                      },
+                      {
+                        x: events2.pageX,
+                        y: events2.pageY,
                       }
-                      if(newScale < minScale){
-                        newScale = minScale;
+                    ) /
+                    getDistance(
+                      {
+                        x: store.pageX,
+                        y: store.pageY,
+                      },
+                      {
+                        x: store.pageX2,
+                        y: store.pageY2,
                       }
-                      // 记住使用的缩放值
-                      store.scale = newScale;
-                      // 图像应用缩放效果
-                      inner.style.transform = "scale(" + newScale + ")";
-                    }
+                    );
+                  // 应用在元素上的缩放比例
+                  var newScale = store.originScale * zoom * 0.8;
+                  var maxScale = 3, minScale = 1;
+                  // 最大缩放比例限制
+                  if (newScale > maxScale) {
+                    newScale = maxScale;
                   }
-                },
-                { passive: false }
-              );
+                  if(newScale < minScale){
+                    newScale = minScale;
+                  }
+                  // 记住使用的缩放值
+                  store.scale = newScale;
+                  // 图像应用缩放效果
+                  inner.style.transform = "scale(" + newScale + ")";
+                }
+              }
+            },
+            { passive: false }
+          );
 
-              document.addEventListener("touchend", function () {
-                store.moveable = false;
-                delete store.pageX2;
-                delete store.pageY2;
-              });
+          document.addEventListener("touchend", function () {
+            store.moveable = false;
+            delete store.pageX2;
+            delete store.pageY2;
+          });
 
-              document.addEventListener("touchcancel", function () {
-                store.moveable = false;
-                delete store.pageX2;
-                delete store.pageY2;
-              });
-
-            }
-        })
+          document.addEventListener("touchcancel", function () {
+            store.moveable = false;
+            delete store.pageX2;
+            delete store.pageY2;
+          });
+      }
       
       function getLimitedPos(inner,left,top){
         let scale = getTransformScale(inner);
