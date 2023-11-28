@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      th {
+        resize: horizontal;
+        overflow: auto;
+      }
+      .con {
+        background-color: #bababa;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .outerdiv{
+        position: fixed;
+        top: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 2;
+        width: 100%;
+        height: 100%;
+        display: none;
+      }
+      .img {border: 5px solid #fff;display:block;}
+    </style>
+  </head>
+
+  <body class="con">
+    <img class="img-preview" width="200" height="100" src="/imgs/aa.jpg" alt="aaa" />
+    <div id="outerdiv" class="outerdiv">
+      <div id="innerdiv" style="position: absolute">
+        <img id="bigimg" class="img" src="" />
+      </div>
+    </div>
+    <!-- <script src="https://cdn.bootcdn.net/ajax/libs/jquery/1.9.0/jquery.js"></script> -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/vConsole/3.15.1/vconsole.min.js"></script>
+    <script>
+      var vConsole = new window.VConsole();
+
+      var outerdiv = document.getElementById('outerdiv');
+      var innerdiv = document.getElementById('innerdiv');
+      let {offsetWidth:outerWidth,offsetHeight:outerHeight} = outerdiv;
+      outerWidth = window.innerWidth;
+      outerHeight = window.innerHeight;
+      
+      document.addEventListener('click', e => {
+            if(e.target.classList.contains('img-preview')){
+              imgShow(e.target);
+              //移动端手指移动事件,如果不需要移动端手指事件,这一部分内容可以不加,只要上面两行代码以及imgShow()事件
+              var store = {
+                scale: 1,
+              };
+              //定义移动端的初始位置
+              var position_top, position_left, pageX, pageY;
+              // 缩放事件的处理
+              //事件开始
+              innerdiv.addEventListener("touchstart", function (event) {
+                  event.preventDefault(); //阻止默认事件，防止底部内容滚动
+                  //在触屏设备下，要判断是单指还是多指操作，可以通过event.touches数组对象的长度判断。
+                  var touches = event.touches;
+                  var events = touches[0]; //单指
+                  var events2 = touches[1]; //双指
+                  if (touches.length == 1) {
+                    //单指操作
+                    pageX = Number(events.pageX);
+                    pageY = Number(events.pageY);
+                    store.moveable = true;
+                    // var _obj = $("#innerdiv");
+                    //  .css获取的值是字符串
+                    position_left = parseFloat(innerdiv.style.left.split("px"));
+                    position_top = parseFloat(innerdiv.style.top.split("px"));
+                  } else {
+                    // 第一个触摸点的坐标
+                    store.pageX = events.pageX;
+                    store.pageY = events.pageY;
+                    store.moveable = true;
+                    if (events2) {
+                      store.pageX2 = events2.pageX;
+                      store.pageY2 = events2.pageY;
+                    }
+                    store.originScale = store.scale || 1;
+                  }
+                },
+                { passive: false }
+              ); //passive: false必须加上,否则控制台报错
+              
+              //开始移动
+              document.addEventListener("touchmove", function (event) {
+                  event.preventDefault(); //阻止默认事件，防止底部滚动
+                  if (!store.moveable) {
+                    return;
+                  }
+                  var touches = event.touches;
+                  var events = touches[0];
+                  var events2 = touches[1];
+                  if (touches.length == 1) {
+                    var pageX2 = Number(events.pageX);
+                    var pageY2 = Number(events.pageY);
+                    let freeTop = position_top + pageY2 - pageY;
+                    let freeLeft = position_left + pageX2 - pageX;
+                    let {left,top} = getLimitedPos(freeLeft,freeTop);
+                    //控制图片移动
+                    innerdiv.style.top = top + 'px';
+                    innerdiv.style.left = left + 'px';
+                  } else {
+                    // 双指移动
+                    if (events2) {
+                      // 第2个指头坐标在touchmove时候获取
+                      if (!store.pageX2) {
+                        store.pageX2 = events2.pageX;
+                      }
+                      if (!store.pageY2) {
+                        store.pageY2 = events2.pageY;
+                      }
+
+                      // 获取坐标之间的距离
+                      var getDistance = function (start, stop) {
+                        //用到三角函数
+                        return Math.hypot(stop.x - start.x, stop.y - start.y);
+                      };
+                      // 双指缩放比例计算
+                      var zoom =
+                        getDistance(
+                          {
+                            x: events.pageX,
+                            y: events.pageY,
+                          },
+                          {
+                            x: events2.pageX,
+                            y: events2.pageY,
+                          }
+                        ) /
+                        getDistance(
+                          {
+                            x: store.pageX,
+                            y: store.pageY,
+                          },
+                          {
+                            x: store.pageX2,
+                            y: store.pageY2,
+                          }
+                        );
+                      // 应用在元素上的缩放比例
+                      var newScale = store.originScale * zoom * 0.8;
+                      var maxScale = 3, minScale = 1;
+                      // 最大缩放比例限制
+                      if (newScale > maxScale) {
+                        newScale = maxScale;
+                      }
+                      if(newScale < minScale){
+                        newScale = minScale;
+                      }
+                      // 记住使用的缩放值
+                      store.scale = newScale;
+                      // 图像应用缩放效果
+                      innerdiv.style.transform = "scale(" + newScale + ")";
+                    }
+                  }
+                },
+                { passive: false }
+              );
+
+              document.addEventListener("touchend", function () {
+                store.moveable = false;
+                delete store.pageX2;
+                delete store.pageY2;
+              });
+
+              document.addEventListener("touchcancel", function () {
+                store.moveable = false;
+                delete store.pageX2;
+                delete store.pageY2;
+              });
+
+            }
+        })
+      
+      function getLimitedPos(left,top){
+        let scale = getTransformScale(innerdiv);
+        let {offsetWidth:innerWidth,offsetHeight:innerHeight} = innerdiv;
+        let inlineMin,inlineMax;
+        let blockMin,blockMax;
+        let innerInlineR =  innerWidth/2;
+        let scaleInline = (innerInlineR * scale - innerInlineR);
+        let innerBlockR = innerHeight/2;
+        let scaleBlock = (innerBlockR * scale - innerBlockR);
+        let leeway = 10;
+        // 图片横向大于框子
+        if(outerWidth - innerWidth * scale < 0){
+          inlineMin = outerWidth - innerWidth - scaleInline;
+          inlineMax = scaleInline;
+        }
+        else if(scale > 1){
+          inlineMin = scaleInline;
+          inlineMax = outerWidth - innerWidth - scaleInline;
+        }
+        else{
+          inlineMin = 0;
+          inlineMax = outerWidth - innerWidth;
+        }
+        // 图片纵向大于框子
+        if(outerHeight - innerHeight * scale < 0){
+          blockMin = outerHeight - innerHeight - scaleBlock;
+          blockMax = scaleBlock;
+        }
+        else if(scale > 1){
+          // blockMin = scaleBlock;
+          // blockMax = outerHeight - innerHeight - scaleBlock;
+          // 图片上下可以出去一点，方便看清对侧部分
+          blockMin = 0;
+          blockMax = outerHeight - innerHeight;
+        }
+        else{
+          blockMin = 0;
+          blockMax = outerHeight - innerHeight;
+        }
+        left = Math.max(inlineMin - leeway, Math.min(left, inlineMax + leeway));
+        top = Math.max(blockMin - leeway, Math.min(top, blockMax + leeway));
+
+        return {left,top}
+      }
+      
+      function getTransformScale(node){
+        let scale = node.style.transform;
+        if(scale){
+          let scaleReg = /scale\((.+)\)/;
+          let match = scale.match(scaleReg);
+          if(match && match[1]){
+            scale = parseFloat(match[1]);
+          }
+        }
+        if(!scale){
+          scale = 1;
+        }
+        return scale;
+      }
+
+      //遮罩层图片位置
+      function imgShow(originImg) {
+        //这是刚才判断是否PC端的函数事件
+        var flag = IsPC();
+        var src = originImg.getAttribute("src"); //获取当前点击的pimg元素中的src属性
+        let bigimg = innerdiv.querySelector('img');
+        bigimg.setAttribute("src", src); //设置#bigimg元素的src属性
+        /*获取当前点击图片的真实大小，并显示弹出层及大图*/
+        bigimg.onload = function(){
+            //注意在使用这种方法获取窗口高度和宽度的时候,
+            //务必在html页面最上方加上一句<!DOCTYPE html>,否则获取屏幕高度时会出问题
+            var windowW = window.innerWidth; //获取当前窗口宽度
+            var windowH = window.innerHeight; //获取当前窗口高度
+            var realWidth = originImg.naturalWidth; //获取图片真实宽度
+            var realHeight = originImg.naturalHeight; //获取图片真实高度
+            var imgWidth, imgHeight;
+            var scale = 0.8; //缩放尺寸，当图片真实宽度和高度大于窗口宽度和高度时进行缩放
+            if (realHeight > windowH * scale) {
+              //判断图片高度
+              imgHeight = windowH * scale; //如大于窗口高度，图片高度进行缩放
+              imgWidth = (imgHeight / realHeight) * realWidth; //等比例缩放宽度
+              if (imgWidth > windowW * scale) {
+                //如宽度扔大于窗口宽度
+                imgWidth = windowW * scale; //再对宽度进行缩放
+              }
+            } else if (realWidth > windowW * scale) {
+              //如图片高度合适，判断图片宽度
+              imgWidth = windowW * scale; //如大于窗口宽度，图片宽度进行缩放
+              imgHeight = (imgWidth / realWidth) * realHeight; //等比例缩放高度
+            } else {
+              //如果图片真实高度和宽度都符合要求，高宽不变
+              if (flag == false) {
+                imgWidth = realWidth;
+                imgHeight = realHeight;
+              } else if (realWidth >= 1000) {
+                //这里我怕图片太大又做了个判断
+                imgWidth = realWidth;
+                imgHeight = realHeight;
+              } else {
+                imgWidth = realWidth * 2;
+                imgHeight = realHeight * 2;
+              }
+            }
+            bigimg.style.width = imgWidth + 'px'; //以最终的宽度对图片缩放
+            var w = (windowW - imgWidth) / 2; //计算图片与窗口左边距
+            var h = (windowH - imgHeight) / 2; //计算图片与窗口上边距
+            //设置#innerdiv的top和left属性
+            innerdiv.style.top = h + 'px';
+            innerdiv.style.left = w + 'px';
+            outerdiv.style.display = 'block';
+        }
+
+        outerdiv.addEventListener('click', (e) => {
+            outerdiv.style.display = 'none';
+        })
+      }
+
+      function IsPC(){  
+        var userAgentInfo = navigator.userAgent;
+        var Agents = new Array("Android", "iPhone", "SymbianOS", "Windows Phone", "iPad", "iPod");  
+        var flag = true;  
+        for (var v = 0; v < Agents.length; v++) {  
+            if (userAgentInfo.indexOf(Agents[v]) > 0) { flag = false; break; }  
+        }  
+        return flag;  
+      }
+    </script>
+  </body>
+</html>
