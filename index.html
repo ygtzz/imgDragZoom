@@ -186,38 +186,34 @@
         let inlineMin,inlineMax;
         let blockMin,blockMax;
         let innerInlineR =  innerWidth/2;
-        let scaleInline = (innerInlineR * scale - innerInlineR);
+        let scaleInlineDiff = (innerInlineR * scale - innerInlineR);
         let innerBlockR = innerHeight/2;
-        let scaleBlock = (innerBlockR * scale - innerBlockR);
+        let scaleBlockDiff = (innerBlockR * scale - innerBlockR);
         let leeway = 10;
         // 图片横向大于框子
         if(outerWidth - innerWidth * scale < 0){
-          inlineMin = outerWidth - innerWidth - scaleInline;
-          inlineMax = scaleInline;
-        }
-        else if(scale > 1){
-          inlineMin = scaleInline;
-          inlineMax = outerWidth - innerWidth - scaleInline;
+          inlineMin = outerWidth - innerWidth - scaleInlineDiff;
+          inlineMax = scaleInlineDiff;
         }
         else{
-          inlineMin = 0;
-          inlineMax = outerWidth - innerWidth;
+          inlineMin = scaleInlineDiff;
+          inlineMax = outerWidth - innerWidth - scaleInlineDiff;
         }
         // 图片纵向大于框子
         if(outerHeight - innerHeight * scale < 0){
-          blockMin = outerHeight - innerHeight - scaleBlock;
-          blockMax = scaleBlock;
-        }
-        else if(scale > 1){
-          // blockMin = scaleBlock;
-          // blockMax = outerHeight - innerHeight - scaleBlock;
-          // 图片上下可以出去一点，方便看清对侧部分
-          blockMin = 0;
-          blockMax = outerHeight - innerHeight;
+          blockMin = outerHeight - innerHeight - scaleBlockDiff;
+          blockMax = scaleBlockDiff;
         }
         else{
-          blockMin = 0;
-          blockMax = outerHeight - innerHeight;
+          //特殊处理，图片上下可以出去一点，方便看清对侧部分
+          if(scale > 1){
+            blockMin = 0;
+            blockMax = outerHeight - innerHeight;
+          }
+          else{
+            blockMin = scaleBlockDiff;
+            blockMax = outerHeight - innerHeight - scaleBlockDiff;
+          }
         }
         left = Math.max(inlineMin - leeway, Math.min(left, inlineMax + leeway));
         top = Math.max(blockMin - leeway, Math.min(top, blockMax + leeway));
