@@ -17,7 +17,7 @@
         align-items: center;
         min-height: 100vh;
       }
-      .outerdiv{
+      .dzouter{
         position: fixed;
         top: 0;
         left: 0;
@@ -27,25 +27,22 @@
         height: 100%;
         display: none;
       }
-      .img {border: 5px solid #fff;display:block;}
+      .dzinner{
+        position: absolute;
+      }
+      .dzimg {border: 5px solid #fff;display:block;}
     </style>
   </head>
 
   <body class="con">
     <img class="img-preview" width="200" height="100" src="/imgs/aa.jpg" alt="aaa" />
-    <div id="outerdiv" class="outerdiv">
-      <div id="innerdiv" style="position: absolute">
-        <img id="bigimg" class="img" src="" />
-      </div>
-    </div>
     <!-- <script src="https://cdn.bootcdn.net/ajax/libs/jquery/1.9.0/jquery.js"></script> -->
     <script src="https://cdn.bootcdn.net/ajax/libs/vConsole/3.15.1/vconsole.min.js"></script>
     <script>
       var vConsole = new window.VConsole();
 
-      var outerdiv = document.getElementById('outerdiv');
-      var innerdiv = document.getElementById('innerdiv');
-      let {offsetWidth:outerWidth,offsetHeight:outerHeight} = outerdiv;
+      let {outer,inner} = genTemplate();
+      let {offsetWidth:outerWidth,offsetHeight:outerHeight} = outer;
       outerWidth = window.innerWidth;
       outerHeight = window.innerHeight;
       
@@ -60,7 +57,7 @@
               var position_top, position_left, pageX, pageY;
               // 缩放事件的处理
               //事件开始
-              innerdiv.addEventListener("touchstart", function (event) {
+              inner.addEventListener("touchstart", function (event) {
                   event.preventDefault(); //阻止默认事件，防止底部内容滚动
                   //在触屏设备下，要判断是单指还是多指操作，可以通过event.touches数组对象的长度判断。
                   var touches = event.touches;
@@ -71,10 +68,10 @@
                     pageX = Number(events.pageX);
                     pageY = Number(events.pageY);
                     store.moveable = true;
-                    // var _obj = $("#innerdiv");
+                    // var _obj = $("#inner");
                     //  .css获取的值是字符串
-                    position_left = parseFloat(innerdiv.style.left.split("px"));
-                    position_top = parseFloat(innerdiv.style.top.split("px"));
+                    position_left = parseFloat(inner.style.left.split("px"));
+                    position_top = parseFloat(inner.style.top.split("px"));
                   } else {
                     // 第一个触摸点的坐标
                     store.pageX = events.pageX;
@@ -106,8 +103,8 @@
                     let freeLeft = position_left + pageX2 - pageX;
                     let {left,top} = getLimitedPos(freeLeft,freeTop);
                     //控制图片移动
-                    innerdiv.style.top = top + 'px';
-                    innerdiv.style.left = left + 'px';
+                    inner.style.top = top + 'px';
+                    inner.style.left = left + 'px';
                   } else {
                     // 双指移动
                     if (events2) {
@@ -159,7 +156,7 @@
                       // 记住使用的缩放值
                       store.scale = newScale;
                       // 图像应用缩放效果
-                      innerdiv.style.transform = "scale(" + newScale + ")";
+                      inner.style.transform = "scale(" + newScale + ")";
                     }
                   }
                 },
@@ -182,8 +179,8 @@
         })
       
       function getLimitedPos(left,top){
-        let scale = getTransformScale(innerdiv);
-        let {offsetWidth:innerWidth,offsetHeight:innerHeight} = innerdiv;
+        let scale = getTransformScale(inner);
+        let {offsetWidth:innerWidth,offsetHeight:innerHeight} = inner;
         let inlineMin,inlineMax;
         let blockMin,blockMax;
         let innerInlineR =  innerWidth/2;
@@ -246,7 +243,7 @@
         //这是刚才判断是否PC端的函数事件
         var flag = IsPC();
         var src = originImg.getAttribute("src"); //获取当前点击的pimg元素中的src属性
-        let bigimg = innerdiv.querySelector('img');
+        let bigimg = inner.querySelector('img');
         bigimg.setAttribute("src", src); //设置#bigimg元素的src属性
         /*获取当前点击图片的真实大小，并显示弹出层及大图*/
         bigimg.onload = function(){
@@ -287,15 +284,28 @@
             bigimg.style.width = imgWidth + 'px'; //以最终的宽度对图片缩放
             var w = (windowW - imgWidth) / 2; //计算图片与窗口左边距
             var h = (windowH - imgHeight) / 2; //计算图片与窗口上边距
-            //设置#innerdiv的top和left属性
-            innerdiv.style.top = h + 'px';
-            innerdiv.style.left = w + 'px';
-            outerdiv.style.display = 'block';
+            //设置#inner的top和left属性
+            inner.style.top = h + 'px';
+            inner.style.left = w + 'px';
+            outer.style.display = 'block';
         }
 
-        outerdiv.addEventListener('click', (e) => {
-            outerdiv.style.display = 'none';
+        outer.addEventListener('click', (e) => {
+            outer.style.display = 'none';
         })
+      }
+
+      function genTemplate(){
+        let outer = document.createElement('div');
+        outer.className = 'dzouter';
+        outer.innerHTML = `
+          <div id="dzinner" class="dzinner">
+            <img id="dzimg" class="dzimg" src="" />
+          </div>
+        `;
+        document.body.insertAdjacentElement('beforeend', outer);
+        let inner = outer.querySelector('#dzinner');
+        return {outer,inner};
       }
 
       function IsPC(){  
