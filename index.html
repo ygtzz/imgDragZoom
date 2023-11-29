@@ -58,7 +58,7 @@
             scale: 1,
           };
           //定义移动端的初始位置
-          var position_top, position_left, pageX, pageY;
+          var pageX, pageY, x, y;
           // 缩放事件的处理
           //事件开始
           inner.addEventListener("touchstart", function (event) {
@@ -72,11 +72,12 @@
                 pageX = Number(events.pageX);
                 pageY = Number(events.pageY);
                 store.moveable = true;
-                // var _obj = $("#inner");
-                //  .css获取的值是字符串
-                position_left = parseFloat(inner.style.left.split("px"));
-                position_top = parseFloat(inner.style.top.split("px"));
-              } else {
+
+                let transf = getTransform(inner)
+                x = events.clientX - transf.transX // 图片初始位置
+                y = events.clientY - transf.transY // 图片初始位置
+              } 
+              else {
                 // 第一个触摸点的坐标
                 store.pageX = events.pageX;
                 store.pageY = events.pageY;
@@ -101,15 +102,13 @@
               var events = touches[0];
               var events2 = touches[1];
               if (touches.length == 1) {
-                var pageX2 = Number(events.pageX);
-                var pageY2 = Number(events.pageY);
-                let freeTop = position_top + pageY2 - pageY;
-                let freeLeft = position_left + pageX2 - pageX;
-                let {left,top} = getLimitedPos(inner,freeLeft,freeTop);
-                //控制图片移动
-                inner.style.top = top + 'px';
-                inner.style.left = left + 'px';
-              } else {
+                let multiple = getTransform(inner).multiple
+                let moveX = events.clientX - x // x向移动距离
+                let moveY = events.clientY - y // y向移动距离
+                let newTransf = limitBorder(inner, outer, moveX, moveY, multiple)
+                inner.style.transform = `matrix(${multiple}, 0, 0, ${multiple}, ${newTransf.transX}, ${newTransf.transY})`
+              } 
+              else {
                 // 双指移动
                 if (events2) {
                   // 第2个指头坐标在touchmove时候获取
@@ -149,7 +148,7 @@
                     );
                   // 应用在元素上的缩放比例
                   var newScale = store.originScale * zoom * 0.8;
-                  var maxScale = 3, minScale = 1;
+                  var maxScale = 5, minScale = 1;
                   // 最大缩放比例限制
                   if (newScale > maxScale) {
                     newScale = maxScale;
@@ -160,7 +159,9 @@
                   // 记住使用的缩放值
                   store.scale = newScale;
                   // 图像应用缩放效果
-                  inner.style.transform = "scale(" + newScale + ")";
+                  let transf = getTransform(inner);
+                  let newTransf = limitBorder(inner, outer, transf.transX, transf.transY, newScale)
+                  inner.style.transform = `matrix(${newScale}, 0, 0, ${newScale}, ${newTransf.transX}, ${newTransf.transY})`
                 }
               }
             },
@@ -179,47 +180,62 @@
             delete store.pageY2;
           });
       }
-      
-      function getLimitedPos(inner,left,top){
-        let scale = getTransformScale(inner);
-        let {offsetWidth:innerWidth,offsetHeight:innerHeight} = inner;
-        let inlineMin,inlineMax;
-        let blockMin,blockMax;
-        let innerInlineR =  innerWidth/2;
-        let scaleInlineDiff = (innerInlineR * scale - innerInlineR);
-        let innerBlockR = innerHeight/2;
-        let scaleBlockDiff = (innerBlockR * scale - innerBlockR);
-        let leeway = 10;
-        // 图片横向大于框子
-        if(outerWidth - innerWidth * scale < 0){
-          inlineMin = outerWidth - innerWidth - scaleInlineDiff;
-          inlineMax = scaleInlineDiff;
-        }
-        else{
-          inlineMin = scaleInlineDiff;
-          inlineMax = outerWidth - innerWidth - scaleInlineDiff;
-        }
-        // 图片纵向大于框子
-        if(outerHeight - innerHeight * scale < 0){
-          blockMin = outerHeight - innerHeight - scaleBlockDiff;
-          blockMax = scaleBlockDiff;
-        }
-        else{
-          //特殊处理，图片上下可以出去一点，方便看清对侧部分
-          if(scale > 1){
-            blockMin = 0;
-            blockMax = outerHeight - innerHeight;
-          }
-          else{
-            blockMin = scaleBlockDiff;
-            blockMax = outerHeight - innerHeight - scaleBlockDiff;
-          }
-        }
-        left = Math.max(inlineMin - leeway, Math.min(left, inlineMax + leeway));
-        top = Math.max(blockMin - leeway, Math.min(top, blockMax + leeway));
 
-        return {left,top}
+      /**
+       * 通过getComputedStyle获取transform矩阵 并用split分割
+       * 如 oDiv 的 transform: translate(100, 100);
+       * getComputedStyle可以取到"matrix(1, 0, 0, 1, 100, 100)"
+       * 当transform属性没有旋转rotate和拉伸skew时
+       * metrix的第1, 4, 5, 6个参数为 x方向倍数, y方向倍数, x方向偏移量, y方向偏移量
+       * 再分别利用 字符串分割 取到对应参数
+       */
+      const getTransform = DOM => {
+          let arr = getComputedStyle(DOM).transform.split(',')
+          return {
+              transX: isNaN(+arr[arr.length - 2]) ? 0 : +arr[arr.length - 2], // 获取translateX
+              transY: isNaN(+arr[arr.length - 1].split(')')[0]) ? 0 : +arr[arr.length - 1].split(')')[0], // 获取translateX
+              multiple: isNaN(+arr[3]) ? 1 :  +arr[3]// 获取图片缩放比例
+          }
       }
+
+      /**
+       * 获取边框限制的transform的x, y偏移量
+       * innerDOM: 内盒子DOM
+       * outerDOM: 边框盒子DOM
+       * moveX: 盒子的x移动距离
+       * moveY: 盒子的y移动距离
+       */
+      const limitBorder = (innerDOM, outerDOM, moveX, moveY, multiple) => {
+            let { clientWidth: innerWidth, clientHeight: innerHeight, offsetLeft: innerLeft, offsetTop: innerTop } = innerDOM;
+            let { clientWidth: outerWidth, clientHeight: outerHeight } = outerDOM;
+            let transX;
+            let transY;
+            let innerInlineR = innerWidth/2;
+            let innerInlineScaleR = innerInlineR * multiple;
+            let innerBlockR = innerHeight/2;
+            let innerBlockScaleR = innerBlockR * multiple;
+            // 放大的图片超出box时 图片最多拖动到与边框对齐
+            if (innerWidth * multiple > outerWidth || innerHeight * multiple > outerHeight) {
+                if (innerWidth * multiple > outerWidth && innerHeight * multiple > outerHeight) {
+                    transX = Math.min(Math.max(moveX, outerWidth - (innerInlineScaleR + innerInlineR) - innerLeft), -innerLeft + (innerInlineScaleR - innerInlineR))
+                    transY = Math.min(Math.max(moveY, outerHeight - (innerBlockScaleR + innerBlockR) - innerTop), -innerTop + (innerBlockScaleR - innerBlockR))
+                } 
+                else if (innerWidth * multiple > outerWidth && !(innerHeight * multiple > outerHeight)) {
+                    transX = Math.min(Math.max(moveX, outerWidth - (innerInlineScaleR + innerInlineR) - innerLeft), -innerLeft + (innerInlineScaleR - innerInlineR))
+                    transY = Math.max(Math.min(moveY, outerHeight - (innerBlockScaleR + innerBlockR) - innerTop), -innerTop + (innerBlockScaleR - innerBlockR))
+                } 
+                else if (!(innerWidth * multiple > outerWidth) && innerHeight * multiple > outerHeight) {
+                    transX = Math.max(Math.min(moveX, outerWidth - (innerInlineScaleR + innerInlineR) - innerLeft), -innerLeft + (innerInlineScaleR - innerInlineR))
+                    transY = Math.min(Math.max(moveY, outerHeight - (innerBlockScaleR + innerBlockR) - innerTop), -innerTop + (innerBlockScaleR - innerBlockR))
+                }
+            }
+            // 图片小于box大小时 图片不能拖出边框
+            else {
+                transX = Math.max(Math.min(moveX, outerWidth - (innerInlineScaleR + innerInlineR) - innerLeft), -innerLeft + (innerInlineScaleR - innerInlineR))
+                transY = Math.max(Math.min(moveY, outerHeight - (innerBlockScaleR + innerBlockR) - innerTop), -innerTop + (innerBlockScaleR - innerBlockR))
+            }
+            return { transX, transY }
+        }
       
       function getTransformScale(node){
         let scale = node.style.transform;
