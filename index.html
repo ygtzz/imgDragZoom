@@ -48,7 +48,7 @@
       
       function initDz(originImg){
           let {outer,inner} = genTemplate();
-          let {offsetWidth:outerWidth,offsetHeight:outerHeight} = outer;
+          let {clientWidth:outerWidth,clientWidth:outerHeight} = outer;
           outerWidth = window.innerWidth;
           outerHeight = window.innerHeight;
 
@@ -207,7 +207,7 @@
        */
       const limitBorder = (innerDOM, outerDOM, moveX, moveY, multiple) => {
             let { clientWidth: innerWidth, clientHeight: innerHeight, offsetLeft: innerLeft, offsetTop: innerTop } = innerDOM;
-            let { clientWidth: outerWidth, clientHeight: outerHeight } = outerDOM;
+            // let { clientWidth: outerWidth, clientHeight: outerHeight } = outerDOM;
             let transX;
             let transY;
             let innerInlineR = innerWidth/2;
