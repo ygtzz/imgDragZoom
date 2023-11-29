@@ -254,9 +254,7 @@
 
       //遮罩层图片位置
       function imgShow(outer,inner,originImg) {
-        //这是刚才判断是否PC端的函数事件
-        var flag = IsPC();
-        var src = originImg.getAttribute("src"); //获取当前点击的pimg元素中的src属性
+        let src = originImg.getAttribute("src"); //获取当前点击的pimg元素中的src属性
         let bigimg = inner.querySelector('img');
         bigimg.setAttribute("src", src); //设置#bigimg元素的src属性
         /*获取当前点击图片的真实大小，并显示弹出层及大图*/
@@ -268,7 +266,7 @@
             var realWidth = originImg.naturalWidth; //获取图片真实宽度
             var realHeight = originImg.naturalHeight; //获取图片真实高度
             var imgWidth, imgHeight;
-            var scale = 0.8; //缩放尺寸，当图片真实宽度和高度大于窗口宽度和高度时进行缩放
+            var scale = 0.9; //缩放尺寸，当图片真实宽度和高度大于窗口宽度和高度时进行缩放
             if (realHeight > windowH * scale) {
               //判断图片高度
               imgHeight = windowH * scale; //如大于窗口高度，图片高度进行缩放
@@ -283,17 +281,8 @@
               imgHeight = (imgWidth / realWidth) * realHeight; //等比例缩放高度
             } else {
               //如果图片真实高度和宽度都符合要求，高宽不变
-              if (flag == false) {
-                imgWidth = realWidth;
-                imgHeight = realHeight;
-              } else if (realWidth >= 1000) {
-                //这里我怕图片太大又做了个判断
-                imgWidth = realWidth;
-                imgHeight = realHeight;
-              } else {
-                imgWidth = realWidth * 2;
-                imgHeight = realHeight * 2;
-              }
+              imgWidth = realWidth;
+              imgHeight = realHeight;
             }
             bigimg.style.width = imgWidth + 'px'; //以最终的宽度对图片缩放
             var w = (windowW - imgWidth) / 2; //计算图片与窗口左边距
@@ -320,16 +309,6 @@
         document.body.insertAdjacentElement('beforeend', outer);
         let inner = outer.querySelector('#dzinner');
         return {outer,inner};
-      }
-
-      function IsPC(){  
-        var userAgentInfo = navigator.userAgent;
-        var Agents = new Array("Android", "iPhone", "SymbianOS", "Windows Phone", "iPad", "iPod");  
-        var flag = true;  
-        for (var v = 0; v < Agents.length; v++) {  
-            if (userAgentInfo.indexOf(Agents[v]) > 0) { flag = false; break; }  
-        }  
-        return flag;  
       }
     </script>
   </body>
