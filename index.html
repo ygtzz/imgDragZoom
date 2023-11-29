@@ -189,8 +189,9 @@
        * metrix的第1, 4, 5, 6个参数为 x方向倍数, y方向倍数, x方向偏移量, y方向偏移量
        * 再分别利用 字符串分割 取到对应参数
        */
-      const getTransform = DOM => {
-          let arr = getComputedStyle(DOM).transform.split(',')
+      const getTransform = dom => {
+          // let arr = getComputedStyle(dom).transform.split(',')
+          let arr = dom.style.transform.split(',');
           return {
               transX: isNaN(+arr[arr.length - 2]) ? 0 : +arr[arr.length - 2], // 获取translateX
               transY: isNaN(+arr[arr.length - 1].split(')')[0]) ? 0 : +arr[arr.length - 1].split(')')[0], // 获取translateX
