@@ -238,21 +238,6 @@
             return { transX, transY }
         }
       
-      function getTransformScale(node){
-        let scale = node.style.transform;
-        if(scale){
-          let scaleReg = /scale\((.+)\)/;
-          let match = scale.match(scaleReg);
-          if(match && match[1]){
-            scale = parseFloat(match[1]);
-          }
-        }
-        if(!scale){
-          scale = 1;
-        }
-        return scale;
-      }
-
       //遮罩层图片位置
       function imgShow(outer,inner,originImg) {
         let src = originImg.getAttribute("src"); //获取当前点击的pimg元素中的src属性
